@@ -1,36 +1,71 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Username & Password Authentication
 
-## Getting Started
+Next.js App Router application with email/password registration, GitHub OAuth,
+and role-based access to the admin page. SQLite is used for local development.
 
-First, run the development server:
+## Setup
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Install dependencies and create the local environment file:
+
+```powershell
+npm install
+Copy-Item .env.example .env
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Set `DATABASE_URL` in `.env` to `file:./dev.db`. Generate an `AUTH_SECRET` with:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```powershell
+npx auth secret
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The command writes the secret to `.env.local`; keep that file private and
+untracked.
 
-## Learn More
+### GitHub OAuth
 
-To learn more about Next.js, take a look at the following resources:
+GitHub OAuth is optional. To enable it:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Open **GitHub → Settings → Developer settings → OAuth Apps → New OAuth App**.
+2. Set the homepage URL to `http://localhost:3000`.
+3. Set the authorization callback URL to
+   `http://localhost:3000/api/auth/callback/github`.
+4. Create the app, generate a client secret, and add the app's client ID and
+   secret to `.env.local`:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+   ```dotenv
+   AUTH_GITHUB_ID="your-client-id"
+   AUTH_GITHUB_SECRET="your-client-secret"
+   ```
 
-## Deploy on Vercel
+5. Restart the development server. GitHub sign-in is available at `/login` and
+   on the dedicated `/login-github` page.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Keep the client secret private. Do not commit it or share it in chat.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+When deploying behind a trusted reverse proxy, set `AUTH_TRUST_HOST=true` in
+the production environment.
+
+Apply the database migration:
+
+```powershell
+npx prisma migrate dev --name auth_user
+npx prisma generate
+```
+
+Start the development server:
+
+```powershell
+npm run dev
+```
+
+## Roles
+
+New email/password and GitHub accounts receive the `USER` role. Only users with
+the `ADMIN` role can open `/admin`. To promote an account during local
+development, run `npx prisma studio`, edit that user's `role` to `ADMIN`, and
+save. Never grant an elevated role from the public sign-up form.
+
+The Admin Dashboard lists email/password accounts and lets an administrator
+delete other accounts after confirmation. The signed-in account and the last
+administrator cannot be deleted. GitHub OAuth accounts are not stored in the
+local `User` table, so they do not appear in this list.
