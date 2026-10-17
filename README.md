@@ -1,71 +1,68 @@
 # Username & Password Authentication
 
-Next.js App Router application with email/password registration, GitHub OAuth,
-and role-based access to the admin page. SQLite is used for local development.
+แอปพลิเคชัน Next.js App Router ที่รองรับการสมัครสมาชิกด้วยอีเมล/รหัสผ่าน, การล็อกอินด้วย GitHub OAuth
+และการควบคุมสิทธิ์เข้าถึงหน้าผู้ดูแลระบบตามบทบาท (Role) โดยใช้ SQLite สำหรับการพัฒนาบนเครื่อง
 
-## Setup
+## การติดตั้ง
 
-Install dependencies and create the local environment file:
+ติดตั้งแพ็กเกจที่จำเป็นและสร้างไฟล์ environment สำหรับเครื่องของคุณ:
 
 ```powershell
 npm install
 Copy-Item .env.example .env
 ```
 
-Set `DATABASE_URL` in `.env` to `file:./dev.db`. Generate an `AUTH_SECRET` with:
+กำหนดค่า `DATABASE_URL` ในไฟล์ `.env` เป็น `file:./dev.db` จากนั้นสร้าง `AUTH_SECRET` ด้วยคำสั่ง:
 
 ```powershell
 npx auth secret
 ```
 
-The command writes the secret to `.env.local`; keep that file private and
-untracked.
+คำสั่งนี้จะเขียนค่า secret ลงในไฟล์ `.env.local` โปรดเก็บไฟล์นี้เป็นความลับ
+และอย่านำเข้าสู่ระบบ Git (ต้องไม่ถูก track)
 
 ### GitHub OAuth
 
-GitHub OAuth is optional. To enable it:
+GitHub OAuth เป็นตัวเลือกเสริม หากต้องการเปิดใช้งาน:
 
-1. Open **GitHub → Settings → Developer settings → OAuth Apps → New OAuth App**.
-2. Set the homepage URL to `http://localhost:3000`.
-3. Set the authorization callback URL to
-   `http://localhost:3000/api/auth/callback/github`.
-4. Create the app, generate a client secret, and add the app's client ID and
-   secret to `.env.local`:
+1. ไปที่ **GitHub → Settings → Developer settings → OAuth Apps → New OAuth App**
+2. กำหนด Homepage URL เป็น `http://localhost:3000`
+3. กำหนด Authorization callback URL เป็น
+   `http://localhost:3000/api/auth/callback/github`
+4. สร้างแอป จากนั้นสร้าง client secret แล้วเพิ่ม client ID และ secret ของแอปลงในไฟล์ `.env.local`:
 
    ```dotenv
    AUTH_GITHUB_ID="your-client-id"
    AUTH_GITHUB_SECRET="your-client-secret"
    ```
 
-5. Restart the development server. GitHub sign-in is available at `/login` and
-   on the dedicated `/login-github` page.
+5. รีสตาร์ตเซิร์ฟเวอร์สำหรับการพัฒนา จากนั้นจะสามารถล็อกอินด้วย GitHub ได้ที่หน้า `/login` และหน้าเฉพาะ `/login-github`
 
-Keep the client secret private. Do not commit it or share it in chat.
+โปรดเก็บ client secret เป็นความลับ ห้าม commit ลง repository หรือส่งต่อในแชต
 
-When deploying behind a trusted reverse proxy, set `AUTH_TRUST_HOST=true` in
-the production environment.
+เมื่อนำไปใช้งานจริงหลัง reverse proxy ที่เชื่อถือได้ ให้ตั้งค่า `AUTH_TRUST_HOST=true`
+ในสภาพแวดล้อมของ production
 
-Apply the database migration:
+รัน database migration:
 
 ```powershell
 npx prisma migrate dev --name auth_user
 npx prisma generate
 ```
 
-Start the development server:
+เริ่มเซิร์ฟเวอร์สำหรับการพัฒนา:
 
 ```powershell
 npm run dev
 ```
 
-## Roles
+## บทบาทผู้ใช้ (Roles)
 
-New email/password and GitHub accounts receive the `USER` role. Only users with
-the `ADMIN` role can open `/admin`. To promote an account during local
-development, run `npx prisma studio`, edit that user's `role` to `ADMIN`, and
-save. Never grant an elevated role from the public sign-up form.
+บัญชีใหม่ที่สมัครด้วยอีเมล/รหัสผ่านและบัญชี GitHub จะได้รับบทบาท `USER` เฉพาะผู้ใช้ที่มีบทบาท
+`ADMIN` เท่านั้นที่เข้าหน้า `/admin` ได้ หากต้องการเลื่อนระดับบัญชีในระหว่างการพัฒนาบนเครื่อง
+ให้รัน `npx prisma studio` แก้ไขค่า `role` ของผู้ใช้คนนั้นเป็น `ADMIN` แล้วบันทึก
+ห้ามให้สิทธิ์ระดับสูงผ่านฟอร์มสมัครสมาชิกสาธารณะโดยเด็ดขาด
 
-The Admin Dashboard lists email/password accounts and lets an administrator
-delete other accounts after confirmation. The signed-in account and the last
-administrator cannot be deleted. GitHub OAuth accounts are not stored in the
-local `User` table, so they do not appear in this list.
+หน้า Admin Dashboard จะแสดงรายชื่อบัญชีที่สมัครด้วยอีเมล/รหัสผ่าน และอนุญาตให้ผู้ดูแลระบบลบบัญชีอื่นได้หลังจากยืนยันแล้ว
+ไม่สามารถลบบัญชีที่กำลังล็อกอินอยู่ และไม่สามารถลบผู้ดูแลระบบคนสุดท้ายได้
+บัญชี GitHub OAuth ไม่ได้ถูกเก็บไว้ในตาราง `User` ภายในเครื่อง จึงไม่แสดงในรายการนี้
